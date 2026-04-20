@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+# ---------------------------------------------------------------------------
+# WheelNext (PEP 817) variant configuration
+# Declares the CANN/NPU provider plugin used at install time so that variant-
+# aware installers (pip ≥ PEP-817, uv) can select the correct wheel.
+# ---------------------------------------------------------------------------
+
+[variant.providers.cann_npu]
+install-time = true
+requires = ["cann-npu-variant-provider>=0.1"]
+plugin-api = "cann_npu_variant_provider.plugin:CannNpuVariantProvider"
+
+[variant.default-priorities]
+namespace = ["cann_npu"]
+
+[variant.default-priorities.feature]
+cann_npu = ["cann_version", "npu_hardware", "torch_version"]
+
+[variant.default-priorities.property]
+cann_npu = { cann_version = ["8.5.0", "8.3.rc2"], npu_hardware = ["a3", "910b"], torch_version = ["2.10.0", "2.8.0"] }

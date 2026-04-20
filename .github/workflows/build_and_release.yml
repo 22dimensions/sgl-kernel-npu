@@ -21,6 +21,7 @@ jobs:
         shell: bash
     permissions:
       contents: write
+      id-token: write  # required for PyPI trusted publishing (OIDC)
     strategy:
       matrix:
         arch: [x86_64, aarch64]
@@ -51,6 +52,7 @@ jobs:
       - name: Install dependency
         run: |
           bash scripts/npu_ci_install_dependency.sh --torch-version ${{ matrix.torch_version }}
+          pip install variantlib
 
       - name: Build SGL-Kernel-NPU
         run: |
@@ -82,10 +84,22 @@ jobs:
             ./build.sh -a deepep
           "
 
+      - name: Inject WheelNext variant metadata
+        run: |
+          export TORCH_DEVICE_BACKEND_AUTOLOAD=0
+          TORCH_VERSION=$(python3 -c "import torch; v=torch.__version__.split('+')[0]; print('.'.join(v.split('.')[:3]))")
+          for whl in output/*.whl; do
+            python3 scripts/inject_variant_metadata.py \
+              --wheel "$whl" \
+              --cann-version "${{ matrix.cann_version }}" \
+              --npu-hardware "${{ matrix.npu_hardware }}" \
+              --torch-version "$TORCH_VERSION"
+          done
+
       - name: Pack up packages
         run: |
           export TORCH_DEVICE_BACKEND_AUTOLOAD=0
-          TORCH_VERSION=$(python3 -c "import torch; print(torch.__version__)" | awk -F'+' '{print $1}')
+          TORCH_VERSION=$(python3 -c "import torch; v=torch.__version__.split('+')[0]; print('.'.join(v.split('.')[:3]))")
           PYTHON_VERSION=$(python3 -c "import platform; print(platform.python_version())" | awk -F'.' '{print $1$2}')
           PACKAGE_NAME="sgl-kernel-npu-${{ github.event.release.tag_name }}-torch${TORCH_VERSION}-py${PYTHON_VERSION}-cann${{ matrix.cann_version }}-${{ matrix.npu_hardware }}-${{ matrix.arch }}.zip"
           cd output/
@@ -99,3 +113,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: ./output/*.zip
+
+      - name: Publish to PyPI
+        if: github.event_name == 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: output/
+          skip-existing: true

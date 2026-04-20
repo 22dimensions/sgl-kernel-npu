@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "cann-npu-variant-provider"
+version = "0.1.0"
+description = "WheelNext variant provider for Ascend CANN toolkit and NPU hardware"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+dependencies = ["variantlib>=0.1"]
+
+[project.entry-points."variantlib.v0.provider"]
+cann_npu = "cann_npu_variant_provider.plugin:CannNpuVariantProvider"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cann_npu_variant_provider*"]
