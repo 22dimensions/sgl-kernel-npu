@@ -13,6 +13,8 @@ on:
       - 'python/deep_ep/**'
       - 'build.sh'
 
+  workflow_dispatch:
+
 jobs:
 
   build_deep_ep_wheel_910b:
